@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Starship V3 Explorer V3 — Meta Quest 3</title>
+<title>Starship V3 Explorer V5 — Meta Quest 3</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#050914;color:#eef4ff;font-family:system-ui,Arial}
   #hud{position:fixed;z-index:5;top:12px;left:12px;max-width:min(370px,calc(100vw - 24px));background:#101a2add;border:1px solid #52617b;border-radius:14px;padding:12px;backdrop-filter:blur(8px)}
@@ -18,8 +18,8 @@
 </head>
 <body>
 <div id="hud">
-  <h1>STARSHIP V3 EXPLORER · V3</h1>
-  <p>Modelo didáctico a escala visual aproximada 1:1. Explora el exterior, activa el corte y observa los sistemas principales. La geometría interna es esquemática, no un plano de fabricación. V4: inspección y manipulación VR experimental.</p>
+  <h1>STARSHIP V3 EXPLORER · V5</h1>
+  <p>Modelo didáctico a escala visual aproximada 1:1. Explora el exterior, activa el corte y observa los sistemas principales. La geometría interna es esquemática, no un plano de fabricación. V5: geometría mejorada, inspección y manipulación VR experimental.</p>
   <div class="buttons">
     <button id="cut">Corte interior: OFF</button>
     <button id="transparent">Casco transparente</button>
@@ -30,12 +30,13 @@
     <button id="engine">Despiece motor: OFF</button>
     <button id="systems">Sistemas: OFF</button>
     <button id="tour">Recorrido interior: OFF</button>
+    <button id="restore">Reensamblar piezas</button>
     <button id="reset">Reiniciar vista</button>
   </div>
   <div id="status">Arrastra para girar · rueda/pellizco para acercar · entra en VR con el botón inferior.</div>
   <div id="vrhint">Meta Quest 3: abre este proyecto desde un sitio HTTPS y pulsa “ENTER VR”.</div>
 </div>
-<div id="help">En VR: activa INSPECCIÓN, pellizca para agarrar y desplazar piezas, gira la muñeca para rotarlas y suelta para dejarlas. Apunta con el mando y pulsa el gatillo para seleccionar. Los paneles flotantes permiten cambiar modos.</div>
+<div id="help">En VR: activa INSPECCIÓN, pellizca para agarrar y desplazar piezas, gira la muñeca para rotarlas y suelta para dejarlas. Apunta con el mando y pulsa el gatillo para seleccionar. Los paneles flotantes permiten cambiar modos. REENSAMBLAR restaura las piezas de inspección. El seguimiento manual depende del navegador y permisos WebXR.</div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -48,7 +49,7 @@ scene.background = new THREE.Color(0x050914);
 scene.fog = new THREE.Fog(0x050914, 170, 520);
 const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 1200);
 camera.position.set(95,75,155);
-const renderer = new THREE.WebGLRenderer({antialias:true});
+const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
 renderer.xr.setReferenceSpaceType('local-floor');
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
 renderer.setSize(innerWidth,innerHeight);
@@ -95,8 +96,8 @@ function label(txt,x,y,z){
 }
 function makeFlap(parent,x,y,z,rotY=0){
  const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rotY;parent.add(g);
- const shape=new THREE.Shape();shape.moveTo(-7,0);shape.lineTo(7,0);shape.lineTo(5,15);shape.lineTo(0,19);shape.lineTo(-5,15);shape.closePath();
- const geo=new THREE.ExtrudeGeometry(shape,{depth:1.5,bevelEnabled:true,bevelThickness:.5,bevelSize:.5,bevelSegments:1});
+ const shape=new THREE.Shape();shape.moveTo(-1.5,0);shape.lineTo(2.3,0);shape.lineTo(3.9,10);shape.quadraticCurveTo(3.5,13,1.8,14);shape.lineTo(-1.2,8);shape.closePath();
+ const geo=new THREE.ExtrudeGeometry(shape,{depth:1.5,bevelEnabled:true,bevelThickness:.15,bevelSize:.15,bevelSegments:1});
  const m=new THREE.Mesh(geo,darkSteel);m.rotation.x=-Math.PI/2;g.add(m);return g;
 }
 // Overall concept proportions: approximately 50 m ship + 71 m booster.
@@ -130,12 +131,29 @@ for(const [yy,angle] of [[49,0.3],[56,2.1],[88,4.1]]){
  accessory.position.set(Math.cos(angle)*4.55,yy,Math.sin(angle)*4.55);
  accessory.rotation.y=-angle;hullGroup.add(accessory);
 }
+// V5: líneas longitudinales de soldadura y superficies de aletas de rejilla (interpretación didáctica).
+const weldMaterial=new THREE.LineBasicMaterial({color:0x8da4b6,transparent:true,opacity:.32});
+for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
+ const points=[new THREE.Vector3(Math.cos(a)*4.53,-10,Math.sin(a)*4.53),new THREE.Vector3(Math.cos(a)*4.53,52,Math.sin(a)*4.53)];
+ hullGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),weldMaterial));
+}
+const gridFinMat=new THREE.MeshStandardMaterial({color:0x596877,metalness:.8,roughness:.4,side:THREE.DoubleSide});
+for(let n=0;n<4;n++){
+ const a=n*Math.PI/2;const fin=new THREE.Group();fin.position.set(Math.cos(a)*4.5,48,Math.sin(a)*4.5);fin.rotation.y=-a;booster.add(fin);
+ const frame=new THREE.Mesh(new THREE.BoxGeometry(3.0,3.1,.16),gridFinMat);frame.position.x=1.6;fin.add(frame);
+ for(let k=0;k<5;k++){const slat=new THREE.Mesh(new THREE.BoxGeometry(.08,2.8,.22),darkSteel);slat.position.x=.4+k*.57;fin.add(slat);}
+ for(let k=0;k<4;k++){const slat=new THREE.Mesh(new THREE.BoxGeometry(2.8,.08,.22),darkSteel);slat.position.set(1.6,-1.05+k*.7,0);fin.add(slat);}
+}
 // Engines: six ship engines and stylized 33 booster engine bells
 function engine(parent,x,y,z,r=1.15,len=4){
  const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);g.userData.partName='Motor Raptor (esquemático)';manipulables.push(g);
  const bell=new THREE.Mesh(new THREE.CylinderGeometry(r*.58,r,len,20,1,true),darkSteel);bell.rotation.x=Math.PI;bell.position.y=-len/2;g.add(bell);
  const inner=new THREE.Mesh(new THREE.CylinderGeometry(r*.48,r*.78,len*.65,20,1,true),black);inner.rotation.x=Math.PI;inner.position.y=-len/2;g.add(inner);
  const rim=new THREE.Mesh(new THREE.TorusGeometry(r,.12,8,24),gold);rim.rotation.x=Math.PI/2;rim.position.y=-len;g.add(rim);
+ const pump=new THREE.Mesh(new THREE.CylinderGeometry(r*.38,r*.44,len*.22,16),darkSteel);pump.position.set(0,.22,0);g.add(pump);
+ const collar=new THREE.Mesh(new THREE.TorusGeometry(r*.57,.09,6,20),gold);collar.rotation.x=Math.PI/2;collar.position.y=-.3;g.add(collar);
+ for(let k=0;k<4;k++){const a=k*Math.PI/2;const pipe=new THREE.Mesh(new THREE.CylinderGeometry(r*.055,r*.055,len*.55,7),gold);pipe.position.set(Math.cos(a)*r*.52,-len*.2,Math.sin(a)*r*.52);g.add(pipe);}
+
 }
 for(let i=0;i<6;i++){let a=i*Math.PI/3;engine(ship,Math.cos(a)*2.5,36,Math.sin(a)*2.5,.85,3.4);}
 for(let i=0;i<33;i++){
@@ -231,6 +249,13 @@ function setExplode(value){exploded=value;const tanks=[shipLox,shipFuel,boosterF
  document.getElementById('explode').textContent='Desglosar: '+(value?'ON':'OFF');if(value){cut=true;document.getElementById('cut').textContent='Corte interior: ON';}update();}
 function setInspection(value){inspection=value;inspectionRoot.visible=value&&!tourOn;document.getElementById('inspection').textContent='Inspección: '+(value?'ON':'OFF');}
 document.getElementById('explode').onclick=()=>setExplode(!exploded);
+document.getElementById('restore').onclick=()=>{
+ setExplode(false);
+ for(const p of inspectParts){const original=inspectionOriginals.get(p);if(original){p.position.copy(original.position);p.quaternion.copy(original.quaternion);}}
+ setEngine(false);
+ document.getElementById('status').textContent='Componentes reensamblados en su posición inicial.';
+};
+
 document.getElementById('inspection').onclick=()=>setInspection(!inspection);
 // Pinza pulgar-índice: seleccionar, agarrar, desplazar y soltar una pieza de la mesa de inspección.
 const fingertip=new THREE.Vector3(),thumbtip=new THREE.Vector3();
@@ -304,6 +329,7 @@ const consoleMesh=new THREE.Mesh(new THREE.BoxGeometry(1.4,.75,.45),new THREE.Me
 function setTour(value){tourOn=value;tourRoot.visible=value;document.getElementById('tour').textContent='Recorrido interior: '+(value?'ON':'OFF');if(renderer.xr.isPresenting){tourRoot.position.set(0,0,-1);root.visible=!value;inspectionRoot.visible=!value&&inspection;}else{tourRoot.position.set(0,0,0);if(value){camera.position.set(0,1.65,1.6);controls.target.set(0,1.6,-1);controls.update();}}}
 document.getElementById('tour').onclick=()=>setTour(!tourOn);
 document.getElementById('engine').onclick=()=>setEngine(!engineExploded);
+const inspectionOriginals=new Map(inspectParts.map(p=>[p,{position:p.position.clone(),quaternion:p.quaternion.clone()}]));
 const oldSetInspection=setInspection;
 setInspection=function(value){oldSetInspection(value);engineDemo.visible=value&&engineExploded;};
 const defaultShipPosition=root.position.clone(),defaultShipScale=root.scale.clone();
