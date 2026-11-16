@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Starship 3D Explorer — Meta Quest</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#050914;color:#eef4ff;font-family:system-ui,Arial}
+  #hud{position:fixed;z-index:5;top:12px;left:12px;max-width:min(370px,calc(100vw - 24px));background:#101a2add;border:1px solid #52617b;border-radius:14px;padding:12px;backdrop-filter:blur(8px)}
+  h1{font-size:17px;margin:0 0 5px} p{font-size:12px;line-height:1.4;margin:5px 0 10px;color:#c5d2e7}
+  .buttons{display:flex;flex-wrap:wrap;gap:6px}
+  button{border:1px solid #71829e;background:#24334c;color:white;border-radius:9px;padding:8px 10px;font-size:12px}
+  button:active{background:#405b83}
+  #status{font-size:11px;color:#9fb2ce;margin-top:8px}
+  #help{position:fixed;z-index:4;bottom:12px;left:12px;background:#101a2acc;padding:8px 10px;border-radius:10px;font-size:11px;color:#c5d2e7}
+  #vrhint{color:#9fe3c0}
+  #hud{border:1px solid #3d6886;background:linear-gradient(140deg,#0c1b31f2,#111b2fe8);box-shadow:0 18px 50px #0008}
+  h1{font-size:18px;letter-spacing:1.2px;color:#f4f9ff}
+  button{background:linear-gradient(180deg,#264762,#182a43);border-color:#42758f;font-weight:600;cursor:pointer}
+  button:hover{border-color:#6fe6ff;background:#244c68}
+  #help{border:1px solid #2c536c;max-width:calc(100vw - 44px)}
+  #legend{font-size:11px;color:#c7d9e8;margin:9px 0 2px;line-height:1.7}
+  #legend b{font-size:10px;padding:2px 5px;border-radius:4px;color:#06101b}
+  @media(max-width:600px){#hud{top:8px;left:8px;padding:10px;max-width:calc(100vw - 38px)}h1{font-size:14px}button{font-size:11px;padding:7px}#help{bottom:70px}}
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>STARSHIP V3 · EXPLORADOR 3D</h1>
+  <p>Modelo didáctico a escala visual aproximada 1:1. Explora el exterior, activa el corte y observa los sistemas principales. La geometría interna es esquemática, no un plano de fabricación.</p>
+  <div id="legend"><b style="background:#d5e5f1">ACERO</b> <b style="background:#101820;color:white">ESCUDO</b> <b style="background:#42b6ee">METANO</b> <b style="background:#ffae55">OXÍGENO</b></div>
+  <div class="buttons">
+    <button id="cut">Corte interior: OFF</button>
+    <button id="transparent">Casco transparente</button>
+    <button id="tiles">Escudo térmico: OFF</button>
+    <button id="labels">Etiquetas: ON</button>
+    <button id="reset">Reiniciar vista</button>
+  </div>
+  <div id="status">Arrastra para girar · rueda/pellizco para acercar · entra en VR con el botón inferior.</div>
+  <div id="vrhint">Meta Quest 3: abre este proyecto desde un sitio HTTPS y pulsa “ENTER VR”.</div>
+</div>
+<div id="help">En VR: usa controles/manos para mirar alrededor. En escritorio: arrastra con el ratón.</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050914);
+scene.fog = new THREE.Fog(0x050914, 170, 520);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 1200);
+camera.position.set(95,75,155);
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.xr.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.4;
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer));
+const controls = new OrbitControls(camera,renderer.domElement);
+controls.target.set(0,55,0); controls.enableDamping=true; controls.minDistance=25; controls.maxDistance=360;
+
+scene.add(new THREE.HemisphereLight(0xbfd9ff,0x253044,2.0));
+const sun = new THREE.DirectionalLight(0xffffff,2.4); sun.position.set(-100,180,130); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x79aaff,1.1); fill.position.set(120,80,-120); scene.add(fill);
+
+const steel = new THREE.MeshStandardMaterial({color:0xd6e2ee,metalness:.84,roughness:.23});
+const darkSteel = new THREE.MeshStandardMaterial({color:0x43566b,metalness:.78,roughness:.31});
+const black = new THREE.MeshStandardMaterial({color:0x111923,metalness:.2,roughness:.85});
+const gold = new THREE.MeshStandardMaterial({color:0xe4b65b,metalness:.76,roughness:.26});
+const tankBlue = new THREE.MeshStandardMaterial({color:0x36b8f3,emissive:0x063048,emissiveIntensity:.22,transparent:true,opacity:.78,roughness:.3});
+const tankOrange = new THREE.MeshStandardMaterial({color:0xffa44b,emissive:0x472000,emissiveIntensity:.18,transparent:true,opacity:.78,roughness:.3});
+const tileMat = new THREE.MeshStandardMaterial({color:0x171d27,roughness:.9});
+const white = new THREE.MeshStandardMaterial({color:0xe5edf7,roughness:.5});
+const root = new THREE.Group(); scene.add(root);
+const hullGroup = new THREE.Group(); root.add(hullGroup);
+const internals = new THREE.Group(); root.add(internals);
+const tileGroup = new THREE.Group(); root.add(tileGroup);
+const labels = new THREE.Group(); root.add(labels);
+
+function cylinder(parent,rTop,rBot,h,mat,x,y,z,radial=48){
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(rTop,rBot,h,radial,1,false),mat);
+ m.position.set(x,y,z); parent.add(m); return m;
+}
+function sphere(parent,r,mat,x,y,z,sx=1,sy=1,sz=1){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(r,32,20),mat);m.position.set(x,y,z);m.scale.set(sx,sy,sz);parent.add(m);return m;
+}
+function label(txt,x,y,z){
+ const c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=512;c.height=96;
+ ctx.fillStyle='rgba(5,12,24,.82)';ctx.fillRect(0,0,512,96);
+ ctx.strokeStyle='#9bb8dc';ctx.lineWidth=3;ctx.strokeRect(2,2,508,92);
+ ctx.fillStyle='#ffffff';ctx.font='bold 34px Arial';ctx.fillText(txt,18,61);
+ const tex=new THREE.CanvasTexture(c);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false}));
+ sp.position.set(x,y,z);sp.scale.set(30,5.7,1);labels.add(sp);
+}
+function makeFlap(parent,x,y,z,rotY=0){
+ const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rotY;parent.add(g);
+ const shape=new THREE.Shape();shape.moveTo(-7,0);shape.lineTo(7,0);shape.lineTo(5,15);shape.lineTo(0,19);shape.lineTo(-5,15);shape.closePath();
+ const geo=new THREE.ExtrudeGeometry(shape,{depth:1.5,bevelEnabled:true,bevelThickness:.5,bevelSize:.5,bevelSegments:1});
+ const m=new THREE.Mesh(geo,darkSteel);m.rotation.x=-Math.PI/2;g.add(m);return g;
+}
+// Overall concept proportions: approximately 50 m ship + 71 m booster.
+const ship = new THREE.Group(); hullGroup.add(ship);
+cylinder(ship,4.5,4.5,36,steel,0,72,0,64);
+const noseGeo=new THREE.ConeGeometry(4.5,14,64,1); const nose=new THREE.Mesh(noseGeo,steel);nose.position.y=97;ship.add(nose);
+sphere(ship,4.5,steel,0,54,0,1,.5,1);
+makeFlap(ship,-4.5,67,0,0); makeFlap(ship,4.5,67,0,Math.PI);
+makeFlap(ship,0,67,-4.5,Math.PI/2); makeFlap(ship,0,67,4.5,-Math.PI/2);
+// Booster below ship
+const booster=new THREE.Group();hullGroup.add(booster);
+cylinder(booster,4.5,4.5,64,steel,0,21,0,64);
+sphere(booster,4.5,steel,0,-11,0,1,.45,1);
+// Interstage ring and band details
+cylinder(hullGroup,4.65,4.65,2,darkSteel,0,53,0,64);
+for(let y of [0,8,16,24,32,40,48,56,64,72,80,88]) {
+ const ring=cylinder(hullGroup,4.53,4.53,.22,darkSteel,0,y,0,64);
+}
+for(let y of [-8,-2,4,10,16,22,28,34,40,46]) {
+ const ring=cylinder(hullGroup,4.54,4.54,.18,darkSteel,0,y,0,64);
+}
+// Engines: six ship engines and stylized 33 booster engine bells
+function engine(parent,x,y,z,r=1.15,len=4){
+ const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
+ const bell=new THREE.Mesh(new THREE.CylinderGeometry(r*.58,r,len,20,1,true),darkSteel);bell.rotation.x=Math.PI;bell.position.y=-len/2;g.add(bell);
+ const inner=new THREE.Mesh(new THREE.CylinderGeometry(r*.48,r*.78,len*.65,20,1,true),black);inner.rotation.x=Math.PI;inner.position.y=-len/2;g.add(inner);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(r,.12,8,24),gold);rim.rotation.x=Math.PI/2;rim.position.y=-len;g.add(rim);
+}
+for(let i=0;i<6;i++){let a=i*Math.PI/3;engine(ship,Math.cos(a)*2.5,36,Math.sin(a)*2.5,.85,3.4);}
+for(let i=0;i<33;i++){
+ let a=i*2.399963;let rr=i<3?0:(i<15?1.65:3.05);
+ engine(booster,Math.cos(a)*rr,-11,Math.sin(a)*rr,i<3?1.35:.75,3.7);
+}
+// Interior schematic tanks inside transparent cutaway model
+cylinder(internals,3.85,3.85,31,tankOrange,0,78,0,48);
+cylinder(internals,3.85,3.85,25,tankBlue,0,42,0,48);
+cylinder(internals,3.8,3.8,48,tankBlue,0,18,0,48);
+cylinder(internals,3.8,3.8,13,tankOrange,0,-6,0,48);
+for(let y of [30,55,94]) cylinder(internals,3.9,3.9,.45,gold,0,y,0,48);
+// simplified structural spine and piping
+cylinder(internals,.22,.22,105,gold,0,43,0,16);
+for(let x of [-1.4,1.4]){cylinder(internals,.12,.12,92,gold,x,42,0,12);}
+for(let y of [5,15,25,35,45,65,85]) {
+ const tor=new THREE.Mesh(new THREE.TorusGeometry(3.95,.10,8,48),gold);tor.rotation.x=Math.PI/2;tor.position.y=y;internals.add(tor);
+}
+// Payload bay as a highlighted internal volume
+const bay=new THREE.Mesh(new THREE.CylinderGeometry(3.55,3.55,12,48,1,true),new THREE.MeshBasicMaterial({color:0x8cc9ff,wireframe:true,transparent:true,opacity:.35}));
+bay.position.y=105;internals.add(bay);
+for(let i=0;i<5;i++){const sat=new THREE.Group();sat.position.set(-2+i,105,0);internals.add(sat);
+ const body=new THREE.Mesh(new THREE.BoxGeometry(.8,2,.8),gold);sat.add(body);
+ const panel=new THREE.Mesh(new THREE.BoxGeometry(3.4,.12,.9),new THREE.MeshStandardMaterial({color:0x315e9c,metalness:.3}));panel.position.y=.4;sat.add(panel);
+}
+// Thermal tiles in patch strips around ship and booster
+for(const [cy,h,r] of [[72,32,4.57],[20,55,4.57]]){
+ for(let j=0;j<9;j++){
+  let y=cy-h/2+(j+.5)*h/9;
+  for(let i=0;i<32;i++){
+   let a=i*Math.PI*2/32;
+   const m=new THREE.Mesh(new THREE.BoxGeometry(.78, h/9*.83,.12),tileMat);
+   m.position.set(Math.cos(a)*r,y,Math.sin(a)*r);m.rotation.y=-a;tileGroup.add(m);
+  }
+ }
+}
+label('COMPARTIMENTO DE CARGA',0,119,0);
+label('DEPÓSITO LOX (OXÍGENO)',20,78,0);
+label('DEPÓSITO METANO',20,42,0);
+label('MOTORES RAPTOR',18,4,0);
+label('ALETAS DE CONTROL',-17,70,0);
+label('ESCUDO TÉRMICO',-17,30,0);
+
+// Ground grid for scale reference
+const grid=new THREE.GridHelper(240,48,0x31425f,0x1c2b42);grid.position.y=-15;scene.add(grid);
+// Fine linework around structural elements; independent of hull opacity.
+const accentLines = new THREE.Group(); hullGroup.add(accentLines);
+for (const y of [-10,-4,4,12,20,28,36,44,52,59,67,75,83,91]) {
+ const points=[];for(let i=0;i<=96;i++){const a=i*Math.PI*2/96;points.push(new THREE.Vector3(Math.cos(a)*4.57,y,Math.sin(a)*4.57));}
+ const geo=new THREE.BufferGeometry().setFromPoints(points);
+ accentLines.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x7696aa,transparent:true,opacity:.55})));
+}
+// Subtle stars and a blue atmospheric rim to make the silhouette easier to read.
+const starsGeo=new THREE.BufferGeometry(), positions=[];
+for(let i=0;i<950;i++){const a=i*2.399963, z=1-2*(i+.5)/950,rr=Math.sqrt(1-z*z),d=260+(i%7)*11;positions.push(Math.cos(a)*rr*d, z*d+40,Math.sin(a)*rr*d);}
+starsGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+scene.add(new THREE.Points(starsGeo,new THREE.PointsMaterial({color:0x9ebddd,size:.65,sizeAttenuation:true})));
+const rimLight=new THREE.DirectionalLight(0x40b9ff,1.6);rimLight.position.set(35,85,-80);scene.add(rimLight);
+
+let cut=false,transparent=false,showTiles=false,showLabels=true;
+function update(){
+ hullGroup.visible=!cut || transparent;
+ internals.visible=cut || transparent;
+ hullGroup.traverse(o=>{if(o.isMesh && o.material===steel){o.material=transparent?steel:steel;o.material.transparent=transparent;o.material.opacity=transparent?.18:1;}});
+ // hide one half of the outer hull for the cutaway view
+ hullGroup.visible=true;
+ if(cut){
+   hullGroup.scale.set(1,1,1);
+   // Hide the forward-facing half of the shell via a clipping plane is avoided for WebXR compatibility;
+   // instead show a clearly visible half-shell by hiding selected mesh objects.
+   hullGroup.traverse(o=>{
+     if(o.isMesh && o.material===steel && o.geometry.type==='CylinderGeometry' && o.position.z===0) o.visible=false;
+   });
+ } else {
+   hullGroup.traverse(o=>{if(o.isMesh)o.visible=true;});
+ }
+ hullGroup.traverse(o=>{if(o.isMesh && o.material===steel){o.material.transparent=transparent||cut;o.material.opacity=(transparent||cut)?.16:1;}});
+ tileGroup.visible=showTiles;
+ labels.visible=showLabels;
+}
+document.getElementById('cut').onclick=()=>{cut=!cut;document.getElementById('cut').textContent='Corte interior: '+(cut?'ON':'OFF');update();};
+document.getElementById('transparent').onclick=()=>{transparent=!transparent;document.getElementById('transparent').textContent='Casco transparente: '+(transparent?'ON':'OFF');update();};
+document.getElementById('tiles').onclick=()=>{showTiles=!showTiles;document.getElementById('tiles').textContent='Escudo térmico: '+(showTiles?'ON':'OFF');update();};
+document.getElementById('labels').onclick=()=>{showLabels=!showLabels;document.getElementById('labels').textContent='Etiquetas: '+(showLabels?'ON':'OFF');update();};
+document.getElementById('reset').onclick=()=>{camera.position.set(95,75,155);controls.target.set(0,55,0);controls.update();};
+update();
+// Pointer selection on PC and mobile: outline and identify the selected part.
+const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
+let selected=null;const selectionMaterial=new THREE.MeshBasicMaterial({color:0x51e9ff,wireframe:true,transparent:true,opacity:.48,depthTest:false});
+let selectionOverlay=null;
+renderer.domElement.addEventListener('click',e=>{
+ if(renderer.xr.isPresenting)return;
+ pointer.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight*2-1));
+ raycaster.setFromCamera(pointer,camera);
+ const hits=raycaster.intersectObjects([hullGroup,internals,tileGroup],true).filter(h=>h.object.isMesh&&h.object.visible);
+ if(selectionOverlay){selectionOverlay.parent?.remove(selectionOverlay);selectionOverlay.geometry.dispose();selectionOverlay=null;}
+ if(hits.length){selected=hits[0].object;selectionOverlay=new THREE.Mesh(selected.geometry.clone(),selectionMaterial);selected.add(selectionOverlay);
+ document.getElementById('status').textContent='Pieza seleccionada · contorno cian · gira o amplía para examinar';}
+});
+renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera);});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>

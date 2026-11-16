@@ -1,0 +1,35 @@
+# Starship 3D Explorer — Meta Quest 3
+
+## Qué incluye
+- Modelo 3D didáctico de Starship + Super Heavy.
+- Escala visual aproximada 1:1 (altura de conjunto representada en metros).
+- Vista exterior, modo de corte esquemático, casco transparente, escudo térmico y etiquetas.
+- Controles de órbita para escritorio y entrada WebXR para visores compatibles.
+
+## Cómo abrirlo en Meta Quest 3
+1. Descomprime el ZIP en un ordenador.
+2. Sube `index.html` a un alojamiento web que sirva archivos estáticos por **HTTPS** (por ejemplo, GitHub Pages o un servidor web HTTPS).
+3. En Meta Quest 3 abre el navegador Meta Quest y visita la dirección HTTPS.
+4. Pulsa **ENTER VR** y permite el acceso a realidad virtual si el navegador lo solicita.
+
+WebXR normalmente requiere HTTPS; abrir el archivo directamente desde el almacenamiento local no suele habilitar VR.
+
+## Uso
+- Arrastrar con ratón: girar.
+- Rueda o pellizco: acercar/alejar.
+- `Corte interior`: muestra los depósitos y componentes esquemáticos.
+- `Casco transparente`: permite ver los elementos interiores.
+- `Escudo térmico`: muestra las teselas exteriores.
+- `Etiquetas`: activa/desactiva nombres de componentes.
+
+## Límites importantes
+Este es un prototipo visual interactivo, no un gemelo digital oficial de SpaceX ni un modelo CAD certificado. La forma exterior, proporciones y sistemas se representan de manera didáctica; la distribución interna, tuberías y motores están simplificados y no deben usarse para ingeniería, fabricación o simulación técnica. Las especificaciones de Starship cambian entre versiones.
+El proyecto carga Three.js desde un CDN, por lo que necesita conexión a internet al abrirse.
+
+
+## Mejoras visuales V3 (2026-11)
+- Paleta metálica, escudo térmico grafito, depósitos didácticos azules y naranjas.
+- Iluminación cinematográfica, líneas de estructura, fondo estelar y selección cian con toque/clic.
+- Import map para resolver correctamente las dependencias Three.js de los addons.
+- No incluye todavía agarre físico de piezas con seguimiento de manos: es una fase futura que debe desarrollarse y probarse en Quest 3.
+- El uso de colores para fluidos es una convención visual, no un esquema certificado.
